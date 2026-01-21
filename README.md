@@ -16,7 +16,7 @@ Landing page for **Ulnar Nerve** — we build tools for creators.
 
 ## Development
 
-No build step required. Just static HTML.
+No build step required. Just static HTML + Cloudflare Pages Functions.
 
 ```bash
 # Clone the repo
@@ -26,8 +26,17 @@ cd ulnar.app
 # Open in browser
 open index.html
 
-# Or use a local server for live reload
+# Or use a local server
 npx serve .
+```
+
+### Local development with Wrangler
+
+To test the email signup function locally:
+
+```bash
+npm install -g wrangler
+wrangler pages dev .
 ```
 
 ---
@@ -36,11 +45,29 @@ npx serve .
 
 Hosted on [Cloudflare Pages](https://pages.cloudflare.com). Deploys automatically on push to `main`.
 
-### Manual Deploy
+### Setup KV for Email Subscriptions
 
-1. Cloudflare Dashboard → Workers & Pages → Create
-2. Upload `index.html`
-3. Add custom domain `ulnar.app`
+1. Go to Cloudflare Dashboard → **Workers & Pages** → **KV**
+2. Click **Create a namespace**
+3. Name it `ulnar-subscribers`
+4. Go to your Pages project → **Settings** → **Functions** → **KV namespace bindings**
+5. Add binding:
+   - **Variable name:** `SUBSCRIBERS`
+   - **KV namespace:** `ulnar-subscribers`
+6. Redeploy
+
+### View Subscribers
+
+To export your subscriber list:
+
+1. Go to **Workers & Pages** → **KV** → **ulnar-subscribers**
+2. Find the key `subscriber_list`
+3. Click to view/download the JSON array of emails
+
+Or use Wrangler CLI:
+```bash
+wrangler kv:key get --namespace-id=YOUR_NAMESPACE_ID "subscriber_list"
+```
 
 ---
 
@@ -48,8 +75,11 @@ Hosted on [Cloudflare Pages](https://pages.cloudflare.com). Deploys automaticall
 
 ```
 .
-├── index.html    # Landing page
-└── README.md
+├── index.html              # Landing page
+├── README.md
+└── functions/
+    └── api/
+        └── subscribe.js    # Email signup handler
 ```
 
 ---
