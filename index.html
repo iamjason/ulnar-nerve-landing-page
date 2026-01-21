@@ -413,50 +413,73 @@
   </footer>
 
   <script>
-    // Simple form handling with feedback
-    const form = document.getElementById('signup-form');
-    
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
+    // Form submission handler with separated concerns
+    (function() {
+      const form = document.getElementById('signup-form');
       const button = form.querySelector('button');
-      const originalText = button.textContent;
-      button.textContent = 'Sending...';
-      button.disabled = true;
-      
-      try {
+      const signupDiv = document.querySelector('.signup');
+
+      // Button state management
+      function setButtonLoading(isLoading, originalText) {
+        button.disabled = isLoading;
+        button.textContent = isLoading ? 'Sending...' : originalText;
+      }
+
+      // Display success message
+      function showSuccess() {
+        signupDiv.innerHTML = `
+          <div class="signup-message success">
+            Thanks! We'll let you know when we launch something new.
+          </div>
+        `;
+      }
+
+      // Display error message
+      function showError(message) {
+        const existingError = signupDiv.querySelector('.error-message');
+        if (existingError) {
+          existingError.textContent = message;
+          return;
+        }
+
+        const errorMsg = document.createElement('p');
+        errorMsg.className = 'signup-note error-message';
+        errorMsg.style.color = '#dc2626';
+        errorMsg.textContent = message;
+        signupDiv.appendChild(errorMsg);
+      }
+
+      // Submit form data
+      async function submitForm() {
         const response = await fetch(form.action, {
           method: 'POST',
           body: new FormData(form),
           headers: { 'Accept': 'application/json' }
         });
-        
-        const signupDiv = document.querySelector('.signup');
-        
-        if (response.ok) {
-          signupDiv.innerHTML = `
-            <div class="signup-message success">
-              Thanks! We'll let you know when we launch something new.
-            </div>
-          `;
-        } else {
+
+        if (!response.ok) {
           throw new Error('Form submission failed');
         }
-      } catch (error) {
-        button.textContent = originalText;
-        button.disabled = false;
-        
-        // Show error inline
-        let errorMsg = form.querySelector('.error-message');
-        if (!errorMsg) {
-          errorMsg = document.createElement('p');
-          errorMsg.className = 'signup-note error-message';
-          errorMsg.style.color = '#dc2626';
-          form.parentNode.insertBefore(errorMsg, form.nextSibling.nextSibling);
-        }
-        errorMsg.textContent = 'Something went wrong. Please try again.';
+
+        return response;
       }
-    });
+
+      // Main form handler
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const originalText = button.textContent;
+        setButtonLoading(true, originalText);
+
+        try {
+          await submitForm();
+          showSuccess();
+        } catch (error) {
+          setButtonLoading(false, originalText);
+          showError('Something went wrong. Please try again.');
+        }
+      });
+    })();
   </script>
 </body>
 </html>
