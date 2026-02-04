@@ -1,3 +1,36 @@
+async function sendEmailNotification(env, data) {
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Ulnar Notifications <notifications@mail.ulnar.app>',
+        to: 'hello@ulnar.app',
+        subject: `New Inquiry from ${data.company}`,
+        text: `New inquiry received:
+
+Name: ${data.name}
+Company: ${data.company}
+Email: ${data.email}
+Category: ${data.category || 'Not specified'}
+Message: ${data.message}
+
+Submitted: ${data.submittedAt}`,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Resend API error:', error);
+    }
+  } catch (error) {
+    console.error('Email notification error:', error);
+  }
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -55,6 +88,9 @@ export async function onRequestPost(context) {
 
     inquiries.push(key);
     await env.INQUIRIES.put(listKey, JSON.stringify(inquiries));
+
+    // Send email notification (fire-and-forget, doesn't block response)
+    context.waitUntil(sendEmailNotification(env, data));
 
     return new Response(
       JSON.stringify({ success: true, message: 'Inquiry sent!' }),
